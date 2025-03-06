@@ -2,14 +2,13 @@ import React, {useState, useEffect} from 'react';
 import {View, Text, StyleSheet, ActivityIndicator} from 'react-native';
 import {Dimensions} from 'react-native';
 import {LineChart} from 'react-native-chart-kit';
-import {getWeatherLastRecords} from '../../api/api';
 import moment from 'moment';
 
 const {width} = Dimensions.get('window');
 
 interface WeatherData {
   station_sk: string;
-  time: string; // Changed to 'time'
+  time: string;
   humidity: number;
   pressure: number;
   temperature: number;
@@ -25,32 +24,70 @@ export function HistoryScreen() {
   useEffect(() => {
     const fetchHistoryData = async () => {
       try {
-        const data = await getWeatherLastRecords();
-        setIsLoading(false);
-        if (data && Array.isArray(data)) {
-          const filteredData = filterDataByInterval(data, 5); // 5-minute interval
-          const temperatureData = filteredData.map(item => item.temperature);
-          const labels = filteredData.map(item =>
-            moment(item.time, 'HH:mm:ss').format('HH:mm'),
-          ); // Parse 'time'
-          setChartData(temperatureData);
-          setChartLabels(labels);
-        } else if (data) {
-          setChartData([data.temperature]);
-          setChartLabels(['Now']);
-        } else {
+        const response = await fetch('http://192.168.105.81:8080/LastRecords');
+        const data: WeatherData[] = await response.json();
+
+        if (!data || !Array.isArray(data) || data.length === 0) {
           setError('No data received from the API.');
+          setIsLoading(false);
+          return;
         }
+
+        // Ordenar datos en orden ascendente según la hora
+        const sortedData = data.sort(
+          (a, b) =>
+            moment(a.time, 'HH:mm:ss').valueOf() -
+            moment(b.time, 'HH:mm:ss').valueOf(),
+        );
+
+        // Filtrar datos con un intervalo de 5 minutos
+        const filteredData = filterDataByInterval(sortedData, 5);
+
+        // Extraer temperatura y etiquetas de tiempo
+        const temperatureData = filteredData.map(item => item.temperature);
+        const labels = filteredData.map(item =>
+          moment(item.time, 'HH:mm:ss').format('HH:mm'),
+        );
+
+        setChartData(temperatureData);
+        setChartLabels(labels);
+        setIsLoading(false);
       } catch (error) {
+        console.error('Error fetching data:', error);
         setError(
           'Error fetching data: ' +
             (error instanceof Error ? error.message : String(error)),
         );
+        setIsLoading(false);
       }
     };
 
     fetchHistoryData();
   }, []);
+
+  const filterDataByInterval = (
+    data: WeatherData[],
+    intervalMinutes: number,
+  ): WeatherData[] => {
+    if (data.length === 0) return [];
+
+    const filteredData: WeatherData[] = [data[0]];
+    let lastTimestamp = moment(data[0].time, 'HH:mm:ss');
+
+    for (let i = 1; i < data.length; i++) {
+      const currentTimestamp = moment(data[i].time, 'HH:mm:ss');
+      const timeDifferenceMinutes = currentTimestamp.diff(
+        lastTimestamp,
+        'minutes',
+      );
+
+      if (timeDifferenceMinutes >= intervalMinutes) {
+        filteredData.push(data[i]);
+        lastTimestamp = currentTimestamp;
+      }
+    }
+    return filteredData;
+  };
 
   if (isLoading) {
     return (
@@ -67,43 +104,11 @@ export function HistoryScreen() {
       </View>
     );
   }
-  const filterDataByInterval = (
-    data: WeatherData[],
-    intervalMinutes: number,
-  ): WeatherData[] => {
-    if (data.length === 0) return [];
-
-    //This assumes that the data is already sorted by time. If not, uncomment the sort function.
-    const sortedData = [...data].sort(
-      (a, b) =>
-        moment(a.time, 'HH:mm:ss').valueOf() -
-        moment(b.time, 'HH:mm:ss').valueOf(),
-    );
-    // const sortedData = [...data];
-    const filteredData: WeatherData[] = [sortedData[0]];
-    let lastTimestamp = moment(sortedData[0].time, 'HH:mm:ss');
-
-    for (let i = 1; i < sortedData.length; i++) {
-      const currentTimestamp = moment(sortedData[i].time, 'HH:mm:ss');
-      const timeDifferenceMinutes = currentTimestamp.diff(
-        lastTimestamp,
-        'minutes',
-      );
-
-      if (timeDifferenceMinutes >= intervalMinutes) {
-        filteredData.push(sortedData[i]);
-        lastTimestamp = currentTimestamp;
-      }
-    }
-    return filteredData;
-  };
-
-  //Since we only have one data point, we don't need multiple labels
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Historial de Temperatura</Text>
-      {chartData.length > 0 && (
+      {chartData.length > 0 ? (
         <LineChart
           data={{
             labels: chartLabels,
@@ -134,8 +139,9 @@ export function HistoryScreen() {
             borderRadius: 16,
           }}
         />
+      ) : (
+        <Text>No hay datos para mostrar.</Text>
       )}
-      {chartData.length === 0 && <Text>No data to display.</Text>}
     </View>
   );
 }
