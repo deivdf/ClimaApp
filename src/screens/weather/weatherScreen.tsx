@@ -1,45 +1,90 @@
 import React, {useState, useEffect} from 'react';
 import moment from 'moment';
-import {View, Text, StyleSheet, ScrollView} from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
 import TemperatureWidget from './temperatureWidget';
-
-// Datos de prueba
-const weatherData = {
-  date: '2025-03-02',
-  time: '10:26:35',
-  station_sk: '12345',
-  humidity: '85%',
-  pressure: '1013 hPa',
-  temperature: '20°C',
-  altitude: '2150 m',
-};
+import {getWeatherData} from '../../api/api';
 
 export function WeatherScreen() {
+  const [weatherData, setWeatherData] = useState<any | null>(null); // Initialize with null
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [hora, setHora] = useState(moment().format('HH:mm:ss'));
+
   useEffect(() => {
     const intervalId = setInterval(() => {
       setHora(moment().format('HH:mm:ss'));
     }, 1000);
     return () => clearInterval(intervalId);
   }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const data = await getWeatherData();
+        setWeatherData(data);
+      } catch (err) {
+        setError('Error fetching weather data. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text>{error}</Text>
+      </View>
+    );
+  }
+
+  if (!weatherData) {
+    return (
+      <View style={styles.container}>
+        <Text>No data available.</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView>
       <View style={styles.container}>
         <Text style={styles.title}>Pantalla de Clima</Text>
         <View style={styles.dataContainer}>
-          <TemperatureWidget temperature={weatherData.temperature} />
-
+          <TemperatureWidget temperature={`${weatherData.temperature}°C`} />{' '}
+          {/* Added °C */}
           <View style={styles.card}>
             <Text style={styles.label}>Humedad:</Text>
-            <Text style={styles.value}>{weatherData.humidity}</Text>
+            <Text style={styles.value}>{`${weatherData.humidity}%`}</Text>{' '}
+            {/* Added % */}
           </View>
           <View style={styles.card}>
             <Text style={styles.label}>Presión:</Text>
-            <Text style={styles.value}>{weatherData.pressure}</Text>
+            <Text
+              style={styles.value}>{`${weatherData.pressure} hPa`}</Text>{' '}
+            {/* Added hPa */}
           </View>
           <View style={styles.card}>
             <Text style={styles.label}>Altitud:</Text>
-            <Text style={styles.value}>{weatherData.altitude}</Text>
+            <Text style={styles.value}>{`${weatherData.altitude} m`}</Text>{' '}
+            {/* Added m */}
           </View>
           <View style={styles.card}>
             <Text style={styles.label}>Hora:</Text>
@@ -50,7 +95,6 @@ export function WeatherScreen() {
     </ScrollView>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

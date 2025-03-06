@@ -2,7 +2,7 @@ import React from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {Sun, Compass, BarChart2} from 'react-native-feather';
 import WeatherScreen from '../screens/weather/weatherScreen';
-import SensorScreen from '../screens/sensor/sensorScreen';
+//import SensorScreen from '../screens/sensor/sensorScreen';
 import HistoryScreen from '../screens/history/historyScreen';
 
 const Tab = createBottomTabNavigator();
