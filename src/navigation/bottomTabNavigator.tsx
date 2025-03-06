@@ -26,7 +26,7 @@ export default function BottomTabNavigator() {
         tabBarInactiveTintColor: 'gray',
       })}>
       <Tab.Screen name="Clima" component={WeatherScreen} />
-      <Tab.Screen name="Sensor" component={SensorScreen} />
+
       <Tab.Screen name="Historial" component={HistoryScreen} />
     </Tab.Navigator>
   );

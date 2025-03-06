@@ -28,6 +28,7 @@ export function WeatherScreen() {
         <Text style={styles.title}>Pantalla de Clima</Text>
         <View style={styles.dataContainer}>
           <TemperatureWidget temperature={weatherData.temperature} />
+
           <View style={styles.card}>
             <Text style={styles.label}>Humedad:</Text>
             <Text style={styles.value}>{weatherData.humidity}</Text>
@@ -57,7 +58,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
     padding: 20,
   },
   title: {
@@ -76,7 +77,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#fff',
-    padding: 15,
+    padding: 20,
     marginVertical: 10,
     borderRadius: 10,
     width: '45%',
